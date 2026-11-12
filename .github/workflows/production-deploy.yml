@@ -1,0 +1,84 @@
+name: Taskly Production Deployment (Disabled Until Ready)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production_deploy:
+        description: "Confirm that production infrastructure and manifests are ready"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-production:
+    if: ${{ false }} # Enable only after production infrastructure is ready
+    runs-on: ubuntu-latest
+
+    # Configure required reviewers for this Environment in GitHub Settings.
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check production prerequisites
+        shell: bash
+        env:
+          AWS_ROLE_ARN: ${{ vars.AWS_PRODUCTION_ROLE_ARN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          CLUSTER_NAME: ${{ vars.PRODUCTION_CLUSTER_NAME }}
+          NAMESPACE: ${{ vars.PRODUCTION_NAMESPACE }}
+        run: |
+          set -euo pipefail
+
+          test -n "$AWS_ROLE_ARN" || {
+            echo "Missing AWS_PRODUCTION_ROLE_ARN."
+            exit 1
+          }
+
+          test -n "$AWS_REGION" || {
+            echo "Missing AWS_REGION."
+            exit 1
+          }
+
+          test -n "$CLUSTER_NAME" || {
+            echo "Missing PRODUCTION_CLUSTER_NAME."
+            exit 1
+          }
+
+          test -n "$NAMESPACE" || {
+            echo "Missing PRODUCTION_NAMESPACE."
+            exit 1
+          }
+
+          test -d k8s/overlays/production || {
+            echo "Production Kubernetes overlay is missing."
+            exit 1
+          }
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PRODUCTION_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Configure production EKS access
+        run: |
+          aws eks update-kubeconfig \
+            --region "${{ vars.AWS_REGION }}" \
+            --name "${{ vars.PRODUCTION_CLUSTER_NAME }}"
+
+      - name: Deploy production manifests
+        run: |
+          kubectl apply -k k8s/overlays/production \
+            --namespace "${{ vars.PRODUCTION_NAMESPACE }}"
+
+      - name: Verify production rollout
+        run: |
+          kubectl rollout status deployment/taskly-api \
+            --namespace "${{ vars.PRODUCTION_NAMESPACE }}" \
+            --timeout=180s
