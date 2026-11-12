@@ -46,7 +46,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run tests
-        run: pytest -v
+        run: PYTHONPATH=. pytest -v
 
   build-and-deploy:
     name: Build Push and Deploy Staging
