@@ -24,7 +24,7 @@ spec:
         runAsGroup: 10001
       containers:
         - name: taskly-api
-          image: rmavani/taskly-api:ca90fd72a5c5cc2829714481c7ff07a05e14e309
+          image: rmavani/taskly-api:b4ac7ef76dbca6fe45b1235fcc2b8a274e75ab7f
           imagePullPolicy: Always
           ports:
             - name: http
