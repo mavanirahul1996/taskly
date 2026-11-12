@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: taskly-staging
 resources:
   - ../../base
+  - servicemonitor.yaml
 commonLabels:
   environment: staging

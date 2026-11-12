@@ -19,6 +19,7 @@ module "eks_rahul" {
   cluster_subnet_ids_rahul         = module.vpc_rahul.private_subnet_ids_rahul
   node_subnet_ids_rahul            = module.vpc_rahul.public_subnet_ids_rahul
   cluster_public_access_cidr_rahul = var.cluster_public_access_cidr_rahul
+  node_desired_size_rahul          = 2
 }
 
 module "rds_rahul" {

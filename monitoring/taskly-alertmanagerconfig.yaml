@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: taskly-email-alerts
+  namespace: monitoring
+  labels:
+    release: taskly-monitoring
+spec:
+  route:
+    receiver: taskly-email
+    groupBy:
+      - alertname
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+  receivers:
+    - name: taskly-email
+      emailConfigs:
+        - to: "mavanirahul1996@gmail.com"
+          from: "mavanirahul1996@gmail.com"
+          smarthost: smtp.gmail.com:587
+          authUsername: "mavanirahul1996@gmail.com"
+          authPassword:
+            name: taskly-gmail-smtp
+            key: password
+          requireTLS: true
+          sendResolved: true

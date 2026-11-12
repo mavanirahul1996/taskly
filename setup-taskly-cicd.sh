@@ -1,0 +1,127 @@
+#!/bin/bash
+set -e
+
+echo "===== TASKLY CI/CD SETUP ====="
+
+mkdir -p .github/workflows
+
+# Backup existing workflow outside project
+if [ -f .github/workflows/ci-cd.yml ]; then
+  cp .github/workflows/ci-cd.yml \
+    "/tmp/taskly-ci-cd-backup-$(date +%Y%m%d-%H%M%S).yml"
+fi
+
+cat > .github/workflows/ci-cd.yml <<'YAML'
+name: Taskly CI-CD
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run Python Tests
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: sqlite:////tmp/taskly-test.db
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest -v
+
+  build-and-deploy:
+    name: Build Push and Deploy Staging
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: DockerHub Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push SHA Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            rmavani/taskly-api:${{ github.sha }}
+            rmavani/taskly-api:latest
+
+      - name: Update Staging Manifest
+        run: |
+          sed -i "s|image: rmavani/taskly-api:.*|image: rmavani/taskly-api:${GITHUB_SHA}|" k8s/base/deployment.yaml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/base/deployment.yaml
+
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: deploy Taskly ${GITHUB_SHA} [skip ci]"
+            git push
+          fi
+YAML
+
+echo ""
+echo "===== CHECKING WORKFLOW ====="
+git diff --check
+
+echo ""
+echo "===== WORKFLOW CREATED ====="
+cat .github/workflows/ci-cd.yml
+
+echo ""
+echo "===== GITHUB SECRETS REQUIRED ====="
+echo "DOCKERHUB_USERNAME"
+echo "DOCKERHUB_TOKEN"
+
+echo ""
+echo "===== GIT STATUS ====="
+git status --short
+
+echo ""
+echo "CI/CD workflow setup completed."
+echo "No AWS resources were changed."
