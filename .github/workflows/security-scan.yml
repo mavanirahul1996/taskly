@@ -19,7 +19,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Trivy scan
+      - name: Install latest pinned Trivy
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+          version: v0.76.2
+
+      - name: Show HIGH and CRITICAL findings
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+          skip-setup-trivy: true
+
+      - name: Run security gate and create SARIF
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
@@ -30,9 +47,10 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+          skip-setup-trivy: true
 
       - name: Upload Trivy results to GitHub Security
         if: always() && hashFiles('trivy-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
