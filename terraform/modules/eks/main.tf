@@ -24,6 +24,24 @@ resource "aws_iam_role_policy_attachment" "cluster_policy_rahul" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
+# Encrypt Kubernetes Secrets at rest with a dedicated customer-managed KMS key.
+resource "aws_kms_key" "eks_secrets_rahul" {
+  description             = "${var.project_name_rahul} ${var.environment_rahul} EKS secrets encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Project     = var.project_name_rahul
+    Environment = var.environment_rahul
+    Owner       = "Rahul"
+  }
+}
+
+resource "aws_kms_alias" "eks_secrets_rahul" {
+  name          = "alias/${var.project_name_rahul}-${var.environment_rahul}-eks-secrets"
+  target_key_id = aws_kms_key.eks_secrets_rahul.key_id
+}
+
 resource "aws_eks_cluster" "main_rahul" {
   name     = var.cluster_name_rahul
   role_arn = aws_iam_role.cluster_rahul.arn
@@ -34,6 +52,13 @@ resource "aws_eks_cluster" "main_rahul" {
     endpoint_private_access = true
     endpoint_public_access  = true
     public_access_cidrs     = [var.cluster_public_access_cidr_rahul]
+  }
+
+  encryption_config {
+    provider {
+      key_arn = aws_kms_key.eks_secrets_rahul.arn
+    }
+    resources = ["secrets"]
   }
 
   depends_on = [
