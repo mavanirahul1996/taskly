@@ -1,3 +1,23 @@
+> **Portfolio project – DevOps / Cloud learning:** Taskly is a FastAPI task-management service with PostgreSQL persistence, Redis caching, Docker Compose, tests, Kubernetes manifests, Terraform, CI/CD and monitoring-related scripts. This repository is an evolving learning project; the presence of configuration files does not by itself prove that every cloud resource or production workflow is currently deployed.
+>
+> **Current local stack:** `compose.yaml` starts the API, PostgreSQL and Redis. Run `docker compose up --build` and check `http://localhost:8000/health`. API documentation is available at `http://localhost:8000/docs`.
+>
+> **Architecture**
+>
+> ```mermaid
+> flowchart TD
+>   Client[Client / Swagger UI] --> API[FastAPI]
+>   API --> DB[(PostgreSQL)]
+>   API --> Cache[(Redis cache)]
+>   CI[GitHub Actions] -. build / test / delivery .-> API
+>   TF[Terraform] -. infrastructure definitions .-> Cloud[Cloud environment]
+>   API -. metrics / logs .-> Monitor[Monitoring stack]
+> ```
+>
+> **How to explain this project in an interview:** “I used a small task API to practise packaging an application, connecting it to persistent services, running tests, and building the infrastructure and observability workflows around it. I distinguish the working local Docker stack from cloud deployment items that are still in progress.”
+>
+> ---
+>
 # Tasks API
 
 A minimal FastAPI task tracker backed by Postgres, with a Redis read-through cache.
