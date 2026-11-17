@@ -1,5 +1,7 @@
 # Taskly — DevOps & Cloud Engineering Project
 
+[![Taskly CI/CD](https://github.com/mavanirahul1996/taskly/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/mavanirahul1996/taskly/actions/workflows/ci-cd.yml)
+
 Taskly is a task-management REST API built with **FastAPI**, **PostgreSQL** and **Redis**. This repository brings together application development and practical DevOps learning: Docker, automated tests, GitHub Actions, Terraform, Kubernetes and observability.
 
 > **Project status:** The local Docker Compose stack and automated test workflow are defined in the repository. The CI workflow builds and pushes an image and updates the staging Kubernetes manifest on pushes to `main`. Production deployment is not active. Treat staging as a learning environment and verify the live cluster before describing it as currently running.
