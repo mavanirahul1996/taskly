@@ -162,3 +162,21 @@ Use Python 3.10–3.12 for the model dependencies. Start the app stack, install 
 ## What this project demonstrates
 
 Building and testing a Python API, connecting persistent and cached data services, packaging with Docker, automating CI with GitHub Actions, managing AWS infrastructure with Terraform, deploying through Kubernetes manifests and instrumenting an application for observability.
+
+
+## Security scanning and current hardening status
+
+The GitHub Actions Trivy workflow scans the repository for HIGH and CRITICAL vulnerabilities, infrastructure misconfigurations and exposed secrets. It is intentionally configured as a security gate: findings should be reviewed and fixed, not hidden by changing the scanner to always pass.
+
+Recent hardening changes:
+- The Taskly API Kubernetes container now uses a read-only root filesystem and a dedicated writable `/tmp` volume.
+- The EKS Terraform module now configures KMS encryption for Kubernetes Secrets, with automatic key rotation.
+- The RDS and Redis security groups no longer define unrestricted outbound rules.
+
+The latest scan still reports infrastructure risks that need an architecture decision:
+- The EKS API endpoint is public, although access is restricted to a single IPv4 `/32` allowlist. Trivy still flags public endpoint access.
+- The public subnets automatically assign public IP addresses. The current learning environment places EKS worker nodes in those subnets.
+
+For a production design, move worker nodes to private subnets, provide controlled outbound access through NAT or required VPC endpoints, and administer the cluster through VPN, SSM or a private runner before disabling public endpoint access. Do not apply those networking changes without checking connectivity and AWS costs first.
+
+**Current status:** the security scan remains red by design until the remaining public-access and subnet findings are resolved. The KMS customer-managed key also has ongoing AWS charges; review current KMS pricing before applying the Terraform changes.
