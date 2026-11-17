@@ -11,12 +11,8 @@ resource "aws_security_group" "redis_rahul" {
     security_groups = [var.allowed_security_group_id_rahul]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No outbound rules: security groups are stateful, so response traffic is allowed.
+  egress = []
 
   tags = {
     Name        = "${var.project_name_rahul}-${var.environment_rahul}-redis-sg"
